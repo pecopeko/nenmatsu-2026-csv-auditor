@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; object-src 'none'; base-uri 'self';">
+  <title>NENMATSUGATE · 令和8年分（2026年分）年末調整 178万・136万・197万円の壁 ＆ 特定親族特別控除 一括CSV検算</title>
+  <meta name="description" content="国税庁 令和8年12月1日施行（基礎控除最大104万円・給与所得控除最低74万円・扶養要件62万円/136万円・19〜22歳特定親族特別控除9段階63万〜3万円）に1円単位で完全準拠した、外部送信ゼロ（connect-src 'none'）の年末調整シミュレータ＆経理労務向けCSV一括検算ツール。">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar-wrap" data-ui>
+    <div class="topbar">
+      <div class="brand-cluster">
+        <svg class="brand-mark" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="15" height="15" rx="2"></rect>
+          <path d="M6 7h8M6 10.5h8M6 14h5"></path>
+        </svg>
+        <span class="brand-name">NENMATSUGATE</span>
+        <span class="brand-scope">令和8年分（<code>2026-12-01</code>施行）法定検算</span>
+      </div>
+
+      <div class="mode-tabs" role="tablist" aria-label="検算モード切替">
+        <button type="button" class="mode-tab" id="tab-sim" role="tab" aria-selected="true" aria-controls="view-sim">
+          世帯・手取りシミュレータ
+        </button>
+        <button type="button" class="mode-tab" id="tab-csv" role="tab" aria-selected="false" aria-controls="view-csv">
+          経理・労務 CSV 一括検算
+        </button>
+      </div>
+
+      <div class="privacy-stamp" title="Content-Security-Policy connect-src 'none' により外部通信はブラウザレベルで遮断されています">
+        <span class="privacy-dot" aria-hidden="true"></span>
+        <span>外部通信ゼロ（<code>connect-src 'none'</code>）</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="canvas" data-ui>
+    <!-- ==================================================================== -->
+    <!-- VIEW 1: 個人・世帯向けシミュレータ                                   -->
+    <!-- ==================================================================== -->
+    <section id="view-sim" role="tabpanel" aria-labelledby="tab-sim">
+      <div class="title-row">
+        <div>
+          <h1 class="page-title">令和8年分 年末調整 178万・136万・197万円の壁 ＆ 特定親族特別控除</h1>
+          <p class="page-finding" id="sim-headline-finding">
+            給与所得控除74万円＋基礎控除104万円（合計所得489万円以下）および19〜22歳特定親族特別控除（9段階）を令和7年分と1円単位で比較します。
+          </p>
+        </div>
+        <div class="title-actions">
+          <button type="button" class="btn btn-secondary" id="btn-jump-csv">
+            経理CSV一括検算を開く
+          </button>
+        </div>
+      </div>
+
+      <div class="preset-strip" style="margin-top: 14px;" role="group" aria-label="代表的な世帯モデル">
+        <span class="preset-label">検証モデル:</span>
+        <button type="button" class="chip-btn" data-sim-preset="univ-152" aria-pressed="true">
+          大学生の子 バイト152万円（63万満額維持）
+        </button>
+        <button type="button" class="chip-btn" data-sim-preset="part-178" aria-pressed="false">
+          本人年収178万円（所得税0円ライン）
+        </button>
+        <button type="button" class="chip-btn" data-sim-preset="mid-510" aria-pressed="false">
+          中堅世帯 年収510万円（基礎控除68万→104万円）
+        </button>
+        <button type="button" class="chip-btn" data-sim-preset="exec-920" aria-pressed="false">
+          年収920万＋子130万円（特定扶養復帰＋調整控除）
+        </button>
+      </div>
+
+      <!-- Divided 4-KPI Ledger Strip -->
+      <div class="kpi-ledger" style="margin-top: 16px;">
+        <div class="kpi-cell">
+          <span class="kpi-label">令和8年 年調年税額（復興税込）</span>
+          <div class="kpi-value kpi-value-lead num" id="kpi-r8-tax">¥0</div>
+          <div class="kpi-delta num" id="kpi-r8-tax-delta">令和7年比 ¥0</div>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">本人 基礎控除 ＋ 給与所得控除</span>
+          <div class="kpi-value num" id="kpi-basic-emp">¥1,780,000</div>
+          <div class="kpi-delta num" id="kpi-basic-detail">基礎 ¥1,040,000 · 給与控除 ¥740,000</div>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">特定親族特別控除・扶養控除</span>
+          <div class="kpi-value num" id="kpi-dep-ded">¥630,000</div>
+          <div class="kpi-delta" id="kpi-dep-form">特定親族特別控除申告書</div>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">配偶者（特別）控除・所得金額調整</span>
+          <div class="kpi-value num" id="kpi-spouse-adj">¥380,000</div>
+          <div class="kpi-delta num" id="kpi-takehome">本人概算手取り ¥0</div>
+        </div>
+      </div>
+
+      <!-- 2-Column Simulator Workbench -->
+      <div class="sim-grid" style="margin-top: 16px;">
+        <!-- Left 420px Form Panel -->
+        <section class="panel" aria-labelledby="sim-form-heading">
+          <div class="panel-header">
+            <h2 class="panel-title" id="sim-form-heading">世帯収入・控除条件の入力</h2>
+            <span class="panel-meta">別表第五・端数処理準拠</span>
+          </div>
+
+          <div class="field-group">
+            <div class="field-block">
+              <div class="field-label-row">
+                <label class="field-label" for="inp-self-salary">納税者本人 給与収入（額面年収）</label>
+                <span class="field-hint num" id="hint-self-income">合計所得 ¥0</span>
+              </div>
+              <div class="input-with-unit">
+                <input type="number" id="inp-self-salary" class="input-field num" min="0" max="30000000" step="10000" value="6200000">
+                <span class="unit-suffix">円</span>
+              </div>
+              <input type="range" id="rng-self-salary" class="range-slider" min="800000" max="15000000" step="10000" value="6200000" aria-label="本人給与収入スライダー">
+            </div>
+
+            <div class="field-block">
+              <div class="field-label-row">
+                <label class="field-label" for="inp-soc-ins">社会保険料控除（空欄時は約14.4%自動概算）</label>
+                <span class="field-hint num" id="hint-soc-ins">概算適用中</span>
+              </div>
+              <div class="input-with-unit">
+                <input type="number" id="inp-soc-ins" class="input-field num" min="0" max="5000000" step="1000" placeholder="自動概算">
+                <span class="unit-suffix">円</span>
+              </div>
+            </div>
+
+            <hr class="field-divider">
+
+            <label class="check-row">
+              <input type="checkbox" id="chk-has-spouse" checked>
+              <span>配偶者あり（136万円/207万円の壁を判定）</span>
+            </label>
+
+            <div id="spouse-fields" class="field-block">
+              <div class="inline-two-col">
+                <div>
+                  <label class="field-label" for="inp-spouse-age">配偶者年齢</label>
+                  <div class="input-with-unit" style="margin-top: 6px;">
+                    <input type="number" id="inp-spouse-age" class="input-field num" min="18" max="100" value="47">
+                    <span class="unit-suffix">歳</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="field-label-row">
+                    <label class="field-label" for="inp-spouse-salary">配偶者 給与収入</label>
+                    <span class="field-hint num" id="hint-spouse-income">所得 ¥580,000</span>
+                  </div>
+                  <div class="input-with-unit" style="margin-top: 6px;">
+                    <input type="number" id="inp-spouse-salary" class="input-field num" min="0" max="5000000" step="10000" value="1320000">
+                    <span class="unit-suffix">円</span>
+                  </div>
+                </div>
+              </div>
+              <input type="range" id="rng-spouse-salary" class="range-slider" min="0" max="2300000" step="10000" value="1320000" aria-label="配偶者給与収入スライダー">
+            </div>
+
+            <hr class="field-divider">
+
+            <label class="check-row">
+              <input type="checkbox" id="chk-has-child" checked>
+              <span>大学生年代の子・扶養親族あり（19〜22歳は特定親族判定）</span>
+            </label>
+
+            <div id="child-fields" class="field-block">
+              <div class="inline-two-col">
+                <div>
+                  <label class="field-label" for="inp-child-age">親族の年齢</label>
+                  <div class="input-with-unit" style="margin-top: 6px;">
+                    <input type="number" id="inp-child-age" class="input-field num" min="0" max="105" value="20">
+                    <span class="unit-suffix">歳</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="field-label-row">
+                    <label class="field-label" for="inp-child-salary">親族のアルバイト等給与収入</label>
+                    <span class="field-hint num" id="hint-child-income">所得 ¥780,000</span>
+                  </div>
+                  <div class="input-with-unit" style="margin-top: 6px;">
+                    <input type="number" id="inp-child-salary" class="input-field num" min="0" max="5000000" step="10000" value="1520000">
+                    <span class="unit-suffix">円</span>
+                  </div>
+                </div>
+              </div>
+              <input type="range" id="rng-child-salary" class="range-slider" min="0" max="2200000" step="10000" value="1520000" aria-label="親族給与収入スライダー">
+              <div class="field-hint num" id="hint-child-cliff">次の控除減額境界（¥1,590,000）まで残り ¥70,000</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right 700px Chart + Statutory Wall Table -->
+        <div class="right-stack">
+          <section class="panel" aria-labelledby="chart-heading">
+            <div class="panel-header">
+              <h2 class="panel-title" id="chart-heading">19〜22歳 特定親族特別控除 9段階ステップ曲線（令和8年 vs 令和7年）</h2>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="swatch-r8" aria-hidden="true"></span>令和8年（136万〜197万）</span>
+                <span class="legend-item"><span class="swatch-r7" aria-hidden="true"></span>令和7年（123万〜188万）</span>
+              </div>
+            </div>
+            <svg id="step-chart-svg" class="chart-svg" viewBox="0 0 660 204" role="img" aria-label="特定親族特別控除の給与収入別控除額グラフ"></svg>
+            <p class="chart-note" id="chart-caption">
+              令和8年分は給与所得控除74万円への引上げにより、子の給与収入159万円まで満額63万円控除を維持し、197万円まで段階的に控除が継続します。
+            </p>
+          </section>
+
+          <section class="panel" aria-labelledby="wall-table-heading">
+            <div class="panel-header">
+              <h2 class="panel-title" id="wall-table-heading">年収の壁別（103万〜207万円）控除額・親の減税額・手取り早見表</h2>
+              <span class="panel-meta" id="wall-table-scope">対象: 19〜22歳の特定親族</span>
+            </div>
+            <div class="table-scroll">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th scope="col" class="num">対象者の給与収入</th>
+                    <th scope="col" class="num">令和8年合計所得</th>
+                    <th scope="col">提出申告書・区分</th>
+                    <th scope="col" class="num">令和8年控除額</th>
+                    <th scope="col" class="num">令和7年控除額</th>
+                    <th scope="col" class="num">親の税軽減額</th>
+                    <th scope="col" class="num">子本人の所得税</th>
+                  </tr>
+                </thead>
+                <tbody id="wall-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- VIEW 2: 経理・労務担当向け CSV 一括検算                              -->
+    <!-- ==================================================================== -->
+    <section id="view-csv" role="tabpanel" aria-labelledby="tab-csv" hidden>
+      <div class="title-row">
+        <div>
+          <h1 class="page-title">経理・労務向け 令和8年分 年末調整 CSV 一括検算（外部送信ゼロ）</h1>
+          <p class="page-finding" id="csv-headline-finding">
+            給与ソフト書き出しCSVをブラウザ内で即時検算し、特定親族特別控除の申告漏れ・旧123万円基準ミス・基礎控除104万円区分誤りを一覧抽出します。
+          </p>
+        </div>
+        <div class="title-actions">
+          <button type="button" class="btn btn-secondary" id="btn-download-template">
+            入力用サンプルCSV保存
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-export-audit">
+            Excel用 検算結果CSV出力（BOM付）
+          </button>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Zone -->
+      <div class="dropzone" id="csv-dropzone" style="margin-top: 16px;">
+        <div>
+          <div class="dropzone-title">従業員CSVファイルをドロップ、またはファイル選択（UTF-8 / Shift-JIS 自動判定）</div>
+          <div class="dropzone-sub">ファイルはブラウザのメモリ上（<code>Uint8Array</code>）でのみ処理され、外部サーバーへは一切送信されません。</div>
+        </div>
+        <div class="dropzone-actions">
+          <button type="button" class="btn btn-secondary" id="btn-load-sample">
+            サンプル8名データで再検算
+          </button>
+          <label class="btn btn-primary" for="file-csv-input">
+            CSVファイルを選択
+          </label>
+          <input type="file" id="file-csv-input" accept=".csv,text/csv" hidden>
+        </div>
+      </div>
+
+      <div id="csv-error-banner" class="error-box" style="margin-top: 12px;" hidden></div>
+
+      <!-- Batch KPI Strip -->
+      <div class="kpi-ledger" style="margin-top: 16px;">
+        <div class="kpi-cell">
+          <span class="kpi-label">過大徴収（従業員への還付漏れ）合計</span>
+          <div class="kpi-value kpi-value-lead num" id="csv-kpi-overpay">¥0</div>
+          <div class="kpi-delta num" id="csv-kpi-underpay">徴収不足合計 ¥0</div>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">検算対象従業員数</span>
+          <div class="kpi-value num" id="csv-kpi-total">0名</div>
+          <div class="kpi-delta num" id="csv-kpi-enc">文字コード: UTF-8</div>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">要是正・要確認の対象者</span>
+          <div class="kpi-value num" id="csv-kpi-flagged">0名</div>
+          <div class="kpi-delta num" id="csv-kpi-severity">重大 0 · 高 0 · 中 0</div>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">令和7年基準からの法定減税総額</span>
+          <div class="kpi-value num" id="csv-kpi-relief">¥0</div>
+          <div class="kpi-delta">基礎104万＋給与控除74万効果</div>
+        </div>
+      </div>
+
+      <!-- Employee Audit Table Panel -->
+      <section class="panel" style="margin-top: 16px;" aria-labelledby="csv-table-heading">
+        <div class="audit-toolbar">
+          <div class="filter-cluster" role="group" aria-label="ステータス絞り込み">
+            <h2 class="panel-title" id="csv-table-heading" style="margin-right: 8px;">従業員別 検算結果一覧</h2>
+            <button type="button" class="chip-btn" data-csv-filter="all" aria-pressed="true">すべて</button>
+            <button type="button" class="chip-btn" data-csv-filter="critical" aria-pressed="false">要是正（重大）</button>
+            <button type="button" class="chip-btn" data-csv-filter="action_required" aria-pressed="false">要確認</button>
+            <button type="button" class="chip-btn" data-csv-filter="clean" aria-pressed="false">適正</button>
+          </div>
+          <input type="search" id="inp-csv-search" class="search-input" placeholder="社員番号・氏名・部署で検索" aria-label="従業員検索">
+        </div>
+
+        <div class="table-scroll">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th scope="col">社員番号・氏名</th>
+                <th scope="col">判定</th>
+                <th scope="col" class="num">給与収入</th>
+                <th scope="col" class="num">基礎控除（法/申）</th>
+                <th scope="col" class="num">扶養・特定親族（法/申）</th>
+                <th scope="col" class="num">法定年税額</th>
+                <th scope="col" class="num">還付漏れ / 不足</th>
+              </tr>
+            </thead>
+            <tbody id="csv-tbody"></tbody>
+          </table>
+        </div>
+        <div id="csv-empty-state" class="empty-frame" hidden>
+          条件に一致する従業員行がありません。フィルタまたは検索語を変更してください。
+        </div>
+      </section>
+
+      <!-- Selected Employee Statutory Detail Panel -->
+      <section class="panel" style="margin-top: 16px;" aria-labelledby="detail-heading">
+        <div class="panel-header">
+          <h2 class="panel-title" id="detail-heading">選択行の法定根拠・実務是正ガイド</h2>
+          <span class="panel-meta" id="detail-emp-meta">-</span>
+        </div>
+        <ul class="finding-list" id="detail-finding-list"></ul>
+      </section>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- High-Relevance Back-Office Conversion Callout                        -->
+    <!-- ==================================================================== -->
+    <aside class="prokit-panel" aria-label="関連バックオフィス実務ツール">
+      <div>
+        <h2 class="prokit-title">年末調整の次は「12月賞与の全銀振込・1月支払調書・インボイス電帳法保存」</h2>
+        <p class="prokit-desc">
+          機密データを一切クラウドに出さずに完結する、日本の経理・総務向けスタンドアロン実務キット『経理・バックオフィス自動化オフライン5点セット』（全銀120B総合振込ジェネレータ・源泉/支払調書検算・インボイス照合・電帳法索引簿・個人情報マスキング）を BOOTH で公開しています。
+        </p>
+      </div>
+      <div class="prokit-actions">
+        <a class="btn btn-primary" href="https://pecopeko1011.booth.pm/items/9179705" target="_blank" rel="noopener noreferrer">
+          BOOTH 経理自動化5点セット（¥1,980）
+        </a>
+        <a class="btn btn-secondary" href="https://zenn.dev/pecopeko/books/afml-quant-and-local-ai-guard" target="_blank" rel="noopener noreferrer">
+          Zenn 実践ガイド（¥1,200）
+        </a>
+      </div>
+    </aside>
+
+    <footer class="canvas-footer">
+      <span>Crafted by peco · Apache-2.0 · 国税庁 令和8年12月1日施行法令準拠 · 100% ブラウザローカル演算</span>
+      <nav class="footer-links" aria-label="開発者リンク">
+        <a href="https://github.com/pecopeko/nenmatsu-2026-csv-auditor" target="_blank" rel="noopener noreferrer">GitHub Repo &amp; Python CLI</a>
+        <a href="https://pecopeko1011.booth.pm/items/9179705" target="_blank" rel="noopener noreferrer">BOOTH Offline Pro Kit (¥1,980)</a>
+        <a href="https://zenn.dev/pecopeko/books/afml-quant-and-local-ai-guard" target="_blank" rel="noopener noreferrer">Zenn Book (¥1,200)</a>
+        <a href="https://github.com/sponsors/pecopeko" target="_blank" rel="noopener noreferrer">GitHub Sponsors</a>
+      </nav>
+    </footer>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

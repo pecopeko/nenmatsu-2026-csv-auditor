@@ -1,0 +1,12 @@
+{
+  "name": "nenmatsu-2026-csv-auditor",
+  "version": "1.0.0",
+  "description": "NENMATSUGATE — 令和8年分（2026年分）年末調整 178万・136万・197万円の壁 ＆ 特定親族特別控除 一括CSV検算・手取りシミュレータ（100%ブラウザ内完結・外部送信ゼロ）",
+  "type": "module",
+  "private": false,
+  "license": "Apache-2.0",
+  "author": "peco <pecopeko@users.noreply.github.com>",
+  "scripts": {
+    "test": "node --test ./test/engine.test.mjs"
+  }
+}
